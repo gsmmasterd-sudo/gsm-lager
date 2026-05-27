@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_8.html -->
+<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_9.html -->
 <html lang="sr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="./GSM Lager_files/supabase-js@2"></script>
 <script src="./GSM Lager_files/html5-qrcode.min.js.download"></script>
@@ -393,6 +393,7 @@ let globalMin=parseInt(localStorage.getItem('global_min')||'10');
 
 async function init(){
   document.getElementById('global-min').value=globalMin;
+  if(sessionStorage.getItem('isAdmin')==='1')isAdmin=true;
   const {data:locs}=await sb.from('locations').select('*').order('id');
   allLocations=locs||[];
   renderLocPicker();
@@ -407,8 +408,9 @@ function getLocIcon(name){
   return'🛒';
 }
 function renderLocPicker(){
+  const adminMode=isAdmin||sessionStorage.getItem('isAdmin')==='1';
   document.getElementById('loc-grid').innerHTML=allLocations.map(l=>
-    `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},false)'>
+    `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},${adminMode})'>
       <span class="loc-icon">${getLocIcon(l.name)}</span>${l.name}
     </button>`
   ).join('')||'<div style="color:#93c5fd;grid-column:1/-1;text-align:center;font-size:13px;">Nema lokacija. Uđi u Admin.</div>';
@@ -453,6 +455,7 @@ function updatePinDots(){document.querySelectorAll('.pin-dot').forEach((d,i)=>d.
 
 function enterAdmin(){
   isAdmin=true;
+  sessionStorage.setItem('isAdmin','1');
   if(currentLocation){applyMode();showToast('Admin mod aktivan 🔐');}
   else{
     document.getElementById('loc-grid').innerHTML=allLocations.map(l=>
@@ -464,7 +467,7 @@ function enterAdmin(){
   }
 }
 
-function logoutAdmin(){isAdmin=false;applyMode();switchTab('dashboard',document.querySelector('.nav-btn'));showToast('Odjavljen iz admin moda');}
+function logoutAdmin(){isAdmin=false;sessionStorage.removeItem('isAdmin');applyMode();switchTab('dashboard',document.querySelector('.nav-btn'));showToast('Odjavljen iz admin moda');}
 
 function applyMode(){
   const b=document.getElementById('mode-badge');
