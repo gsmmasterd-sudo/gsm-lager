@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_6.html -->
+<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_8.html -->
 <html lang="sr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="./GSM Lager_files/supabase-js@2"></script>
 <script src="./GSM Lager_files/html5-qrcode.min.js.download"></script>
@@ -246,7 +246,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="screen-main" class="screen">
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-logo">GSM<span>Lager</span></div>
+      <div class="topbar-logo" onclick="changeLoc()" style="cursor:pointer;">GSM<span>Lager</span></div>
       <div class="mode-badge worker" id="mode-badge">Radnik</div>
     </div>
     <div class="loc-badge" onclick="changeLoc()" id="loc-label">—</div>
@@ -417,7 +417,7 @@ function renderLocPicker(){
 function selectLocation(loc,admin){
   currentLocation=loc;
   if(admin!==undefined)isAdmin=admin;
-  localStorage.setItem('lager_location',loc.id);
+  
   document.getElementById('loc-label').textContent=loc.name;
   document.getElementById('screen-location').classList.remove('active');
   document.getElementById('screen-main').classList.add('active');
