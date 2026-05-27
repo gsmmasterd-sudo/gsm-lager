@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="sr">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_4.html -->
+<html lang="sr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GSM Lager</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+
 <style>
 :root {
   --bg:#f0f2f5;--card:#fff;--border:#e2e6ea;--text:#1a1d21;--muted:#6b7280;--faint:#9ca3af;
@@ -196,14 +196,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <!-- LOCATION PICKER -->
-<div id="screen-location" class="screen active">
+<div id="screen-location" class="screen">
   <div class="logo-wrap">
     <div class="logo">GSM<span>Lager</span></div>
     <div class="logo-sub">Sistem upravljanja zalihama</div>
   </div>
-  <div class="loc-grid" id="loc-grid">
-    <div class="loading" style="grid-column:1/-1;color:#93c5fd;">Učitavam...</div>
-  </div>
+  <div class="loc-grid" id="loc-grid"><button class="loc-btn" onclick="selectLocation({&quot;id&quot;:1,&quot;name&quot;:&quot;Magacin&quot;},false)">
+      <span class="loc-icon">📦</span>Magacin
+    </button><button class="loc-btn" onclick="selectLocation({&quot;id&quot;:2,&quot;name&quot;:&quot;Radnja 1&quot;},false)">
+      <span class="loc-icon">🛒</span>Radnja 1
+    </button><button class="loc-btn" onclick="selectLocation({&quot;id&quot;:3,&quot;name&quot;:&quot;Radnja 2&quot;},false)">
+      <span class="loc-icon">🛒</span>Radnja 2
+    </button><button class="loc-btn" onclick="selectLocation({&quot;id&quot;:4,&quot;name&quot;:&quot;Radnja 3&quot;},false)">
+      <span class="loc-icon">🛒</span>Radnja 3
+    </button></div>
   <button class="admin-entry-btn" onclick="openPinModal()">🔐 Admin panel</button>
 </div>
 
@@ -217,17 +223,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="pin-dot"></div><div class="pin-dot"></div>
     </div>
     <div class="pin-grid">
-      <button class="pin-key" onclick="pinKey('1')">1</button>
-      <button class="pin-key" onclick="pinKey('2')">2</button>
-      <button class="pin-key" onclick="pinKey('3')">3</button>
-      <button class="pin-key" onclick="pinKey('4')">4</button>
-      <button class="pin-key" onclick="pinKey('5')">5</button>
-      <button class="pin-key" onclick="pinKey('6')">6</button>
-      <button class="pin-key" onclick="pinKey('7')">7</button>
-      <button class="pin-key" onclick="pinKey('8')">8</button>
-      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey(&#39;1&#39;)">1</button>
+      <button class="pin-key" onclick="pinKey(&#39;2&#39;)">2</button>
+      <button class="pin-key" onclick="pinKey(&#39;3&#39;)">3</button>
+      <button class="pin-key" onclick="pinKey(&#39;4&#39;)">4</button>
+      <button class="pin-key" onclick="pinKey(&#39;5&#39;)">5</button>
+      <button class="pin-key" onclick="pinKey(&#39;6&#39;)">6</button>
+      <button class="pin-key" onclick="pinKey(&#39;7&#39;)">7</button>
+      <button class="pin-key" onclick="pinKey(&#39;8&#39;)">8</button>
+      <button class="pin-key" onclick="pinKey(&#39;9&#39;)">9</button>
       <button class="pin-key del" onclick="pinDel()">⌫</button>
-      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key" onclick="pinKey(&#39;0&#39;)">0</button>
       <button class="pin-key del" onclick="closePinModal()">✕</button>
     </div>
     <div class="pin-error" id="pin-error">Pogrešan PIN. Pokušaj ponovo.</div>
@@ -235,23 +241,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- MAIN APP -->
-<div id="screen-main" class="screen">
+<div id="screen-main" class="screen active">
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-logo">GSM<span>Lager</span></div>
       <div class="mode-badge worker" id="mode-badge">Radnik</div>
     </div>
-    <div class="loc-badge" onclick="changeLoc()" id="loc-label">—</div>
+    <div class="loc-badge" onclick="changeLoc()" id="loc-label">Radnja 1</div>
   </div>
 
   <!-- DASHBOARD -->
-  <div id="tab-dashboard" class="content">
+  <div id="tab-dashboard" class="content" style="display: flex; flex-direction: column;">
     <div id="alerts-container"></div>
     <div class="dash-header">
       <div class="dash-title">Pregled zaliha</div>
-      <div class="dash-sub" id="dash-sub"></div>
+      <div class="dash-sub" id="dash-sub">Radnja 1</div>
     </div>
-    <div id="dashboard-content"><div class="loading">Učitavam...</div></div>
+    <div id="dashboard-content"><div class="empty">Nema artikala. Dodaj ih u Admin → Artikli.</div></div>
   </div>
 
   <!-- SCAN -->
@@ -291,12 +297,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="tab-settings" class="content" style="display:none;">
     <div class="settings-section">
       <div class="settings-title">Lokacije</div>
-      <div id="loc-manage-list"></div>
+      <div id="loc-manage-list"><div class="manage-item"><div class="manage-name">Magacin</div><div class="manage-del" onclick="deleteLocation(1,&#39;Magacin&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 1</div><div class="manage-del" onclick="deleteLocation(2,&#39;Radnja 1&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 2</div><div class="manage-del" onclick="deleteLocation(3,&#39;Radnja 2&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 3</div><div class="manage-del" onclick="deleteLocation(4,&#39;Radnja 3&#39;)">Obriši</div></div></div>
       <div class="settings-row"><div class="settings-row-label">Dodaj lokaciju</div><div class="settings-row-action" onclick="addLocation()">+ Dodaj</div></div>
     </div>
     <div class="settings-section">
       <div class="settings-title">Kategorije</div>
-      <div id="cat-manage-list"></div>
+      <div id="cat-manage-list"><div class="manage-item"><div class="manage-name">👜 Futrole</div><div class="manage-del" onclick="deleteCategory(10,&#39;Futrole&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Kablovi</div><div class="manage-del" onclick="deleteCategory(4,&#39;Kablovi&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔗 Kablovi</div><div class="manage-del" onclick="deleteCategory(8,&#39;Kablovi&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📱 Maske</div><div class="manage-del" onclick="deleteCategory(9,&#39;Maske&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Maske</div><div class="manage-del" onclick="deleteCategory(3,&#39;Maske&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Ostalo</div><div class="manage-del" onclick="deleteCategory(5,&#39;Ostalo&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Punjači</div><div class="manage-del" onclick="deleteCategory(2,&#39;Punjači&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔌 Punjači</div><div class="manage-del" onclick="deleteCategory(7,&#39;Punjači&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🎧 Slušalice</div><div class="manage-del" onclick="deleteCategory(11,&#39;Slušalice&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Stakla</div><div class="manage-del" onclick="deleteCategory(1,&#39;Stakla&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🛡️ Stakla</div><div class="manage-del" onclick="deleteCategory(6,&#39;Stakla&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔊 Zvučnici</div><div class="manage-del" onclick="deleteCategory(12,&#39;Zvučnici&#39;)">Obriši</div></div></div>
       <div class="settings-row"><div class="settings-row-label">Dodaj kategoriju</div><div class="settings-row-action" onclick="addCategory()">+ Dodaj</div></div>
     </div>
     <div class="settings-section">
@@ -325,17 +331,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <nav class="bottomnav">
-    <button class="nav-btn active" onclick="switchTab('dashboard',this)">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Pregled
+    <button class="nav-btn active" onclick="switchTab(&#39;dashboard&#39;,this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>Pregled
     </button>
-    <button class="nav-btn" onclick="switchTab('scan',this)">
-      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>Skeniraj
+    <button class="nav-btn" onclick="switchTab(&#39;scan&#39;,this)">
+      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line></svg>Skeniraj
     </button>
-    <button class="nav-btn" id="nav-products" onclick="switchTab('products',this)" style="display:none;">
-      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Artikli
+    <button class="nav-btn" id="nav-products" onclick="switchTab(&#39;products&#39;,this)" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path></svg>Artikli
     </button>
-    <button class="nav-btn" id="nav-settings" onclick="switchTab('settings',this)" style="display:none;">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Podešavanja
+    <button class="nav-btn" id="nav-settings" onclick="switchTab(&#39;settings&#39;,this)" style="display:none;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>Podešavanja
     </button>
   </nav>
 </div>
@@ -356,7 +362,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="form-row"><label>Minimum zaliha (upozorenje)</label><input type="number" id="f-min" value="10" min="0"></div>
     <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal('modal-product')">Otkaži</button>
+      <button class="btn-cancel" onclick="closeModal(&#39;modal-product&#39;)">Otkaži</button>
       <button class="btn-save" onclick="saveProduct()">Sačuvaj</button>
     </div>
   </div>
@@ -372,6 +378,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<script src="./GSM Lager_files/supabase-js@2"></script>
+<script src="./GSM Lager_files/html5-qrcode.min.js.download"></script>
 <script>
 const SUPABASE_URL='https://iqkokwzelgvmdwzauvnh.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa29rd3plbGd2bWR3emF1dm5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzcyNzIsImV4cCI6MjA5NTQxMzI3Mn0.dRVNIlY9KBZVTTSFlnvDh3PwF92fT-fIKKXz7WJuI0A';
@@ -394,11 +402,11 @@ async function init(){
 
 function getLocIcon(name){
   const n=name.toLowerCase();
-  if(n.includes('magacin')||n.includes('skladište')||n.includes('storage'))return'🏭';
-  if(n.includes('radnja')||n.includes('shop')||n.includes('prodavnica'))return'🏪';
+  if(n.includes('magacin')||n.includes('skladište')||n.includes('storage'))return'📦';
+  if(n.includes('radnja')||n.includes('shop')||n.includes('prodavnica'))return'🛒';
   if(n.includes('servis')||n.includes('repair'))return'🔧';
   if(n.includes('kancelarija')||n.includes('office'))return'🏢';
-  return'🏪';
+  return'🛒';
 }
 function renderLocPicker(){
   document.getElementById('loc-grid').innerHTML=allLocations.map(l=>
@@ -772,9 +780,12 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 // BOOT
-document.getElementById('tab-dashboard').style.cssText='display:flex;flex-direction:column;';
-['scan','products','settings'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
-init();
+window.addEventListener('load',()=>{
+  document.getElementById('tab-dashboard').style.cssText='display:flex;flex-direction:column;';
+  ['scan','products','settings'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
+  init();
+});
 </script>
-</body>
-</html>
+
+
+</body></html>
