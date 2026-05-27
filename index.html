@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GSM Lager</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root {
+  --bg:#f0f2f5;--card:#fff;--border:#e2e6ea;--text:#1a1d21;--muted:#6b7280;--faint:#9ca3af;
+  --blue:#2563eb;--blue-light:#eff6ff;--blue-dark:#1d4ed8;
+  --green:#16a34a;--green-light:#f0fdf4;
+  --red:#dc2626;--red-light:#fef2f2;
+  --amber:#d97706;--amber-light:#fffbeb;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* LOCATION PICKER */
+#screen-location{align-items:center;justify-content:center;padding:2rem 1.5rem;background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);}
+.logo-wrap{text-align:center;margin-bottom:44px;}
+.logo{font-size:34px;font-weight:800;color:#fff;letter-spacing:-1px;}
+.logo span{color:#93c5fd;}
+.logo-sub{color:#93c5fd;font-size:13px;margin-top:4px;letter-spacing:.05em;}
+.loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:380px;}
+.loc-btn{background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,0.25);border-radius:var(--radius);padding:22px 12px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;transition:all .2s;text-align:center;}
+.loc-btn:active{background:rgba(255,255,255,0.25);transform:scale(0.97);}
+.loc-icon{font-size:30px;display:block;margin-bottom:8px;}
+.admin-entry-btn{margin-top:14px;width:100%;max-width:380px;background:rgba(255,255,255,0.07);backdrop-filter:blur(10px);border:1.5px dashed rgba(255,255,255,0.3);border-radius:var(--radius);padding:14px;font-size:13px;font-weight:600;color:#93c5fd;cursor:pointer;letter-spacing:.02em;}
+
+/* PIN */
+#pin-modal{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
+#pin-modal.open{display:flex;}
+.pin-box{background:var(--card);border-radius:var(--radius);padding:32px 24px;width:100%;max-width:320px;text-align:center;box-shadow:var(--shadow-md);}
+.pin-title{font-size:20px;font-weight:800;margin-bottom:6px;}
+.pin-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:24px;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--blue);border-color:var(--blue);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pin-key{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;font-size:20px;font-weight:600;cursor:pointer;transition:all .1s;}
+.pin-key:active{background:var(--blue-light);border-color:var(--blue);transform:scale(0.94);}
+.pin-key.del{font-size:15px;color:var(--muted);}
+.pin-error{color:var(--red);font-size:13px;margin-top:12px;display:none;}
+
+/* TOPBAR */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-logo{font-size:17px;font-weight:800;letter-spacing:-0.5px;}
+.topbar-logo span{color:var(--blue);}
+.mode-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase;}
+.mode-badge.admin{background:#fef3c7;color:#92400e;}
+.mode-badge.worker{background:var(--blue-light);color:var(--blue-dark);}
+.loc-badge{background:var(--blue-light);color:var(--blue-dark);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;}
+
+/* BOTTOM NAV */
+.bottomnav{background:var(--card);border-top:1px solid var(--border);display:flex;position:sticky;bottom:0;z-index:100;}
+.nav-btn{flex:1;padding:8px 4px 12px;border:none;background:transparent;cursor:pointer;font-size:10px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .15s;text-transform:uppercase;letter-spacing:.02em;}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.nav-btn.active{color:var(--blue);}
+
+.content{flex:1;overflow-y:auto;padding:16px;}
+
+/* DASHBOARD */
+.alerts-bar{background:var(--red-light);border:1px solid #fecaca;border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;}
+.alerts-bar-title{font-size:13px;font-weight:700;color:var(--red);margin-bottom:5px;}
+.alert-item{font-size:12px;color:#7f1d1d;padding:2px 0;}
+.dash-header{margin-bottom:14px;}
+.dash-title{font-size:20px;font-weight:800;}
+.dash-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+
+.cat-card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+.cat-header{padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.cat-icon{font-size:20px;}
+.cat-name{font-size:15px;font-weight:700;flex:1;}
+.cat-count{font-size:12px;color:var(--muted);background:var(--bg);padding:3px 10px;border-radius:20px;}
+.cat-chev{color:var(--faint);font-size:14px;transition:transform .2s;}
+.cat-chev.open{transform:rotate(180deg);}
+.cat-body{border-top:1px solid var(--border);display:none;}
+.cat-body.open{display:block;}
+
+.subcat-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);padding:0 8px;gap:2px;}
+.subcat-tabs::-webkit-scrollbar{display:none;}
+.subcat-tab{padding:9px 12px;font-size:12px;font-weight:700;color:var(--muted);border:none;background:transparent;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;}
+.subcat-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+.brand-tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding:8px 12px;gap:6px;border-bottom:1px solid var(--border);}
+.brand-tabs::-webkit-scrollbar{display:none;}
+.brand-chip{padding:5px 12px;font-size:12px;font-weight:600;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s;}
+.brand-chip.active{background:var(--blue-light);border-color:var(--blue);color:var(--blue-dark);}
+
+.prod-row{display:flex;align-items:center;padding:10px 16px;border-top:1px solid var(--border);gap:10px;}
+.prod-row-name{flex:1;font-size:13px;}
+.prod-row-name small{display:block;font-size:11px;color:var(--faint);margin-top:1px;}
+.qty-pill{min-width:52px;text-align:center;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;}
+.qty-ok{background:var(--green-light);color:var(--green);}
+.qty-low{background:var(--amber-light);color:var(--amber);}
+.qty-zero{background:var(--bg);color:var(--faint);}
+.qty-critical{background:var(--red-light);color:var(--red);animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.55;}}
+
+/* SCAN */
+.scan-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding-bottom:20px;}
+#reader{width:100%;max-width:420px;border-radius:var(--radius);overflow:hidden;border:2px solid var(--blue);}
+.scan-hint{font-size:13px;color:var(--muted);text-align:center;}
+.scan-result-card{width:100%;max-width:420px;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow-md);}
+.scan-result-head{padding:16px;border-bottom:1px solid var(--border);}
+.scan-result-name{font-size:18px;font-weight:800;margin-bottom:2px;}
+.scan-result-meta{font-size:12px;color:var(--muted);}
+.scan-stocks{padding:10px 16px;border-bottom:1px solid var(--border);}
+.scan-stock-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;}
+.scan-stock-row span:first-child{color:var(--muted);}
+.scan-stock-val{font-weight:700;}
+.scan-stock-val.current{color:var(--blue);font-size:16px;}
+.scan-actions{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.action-btn{padding:14px;border-radius:var(--radius-sm);border:1.5px solid;font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;}
+.action-btn:active{transform:scale(0.96);}
+.btn-add{background:var(--green-light);border-color:#86efac;color:var(--green);}
+.btn-remove{background:var(--red-light);border-color:#fca5a5;color:var(--red);}
+.qty-input-row{padding:0 16px 14px;display:flex;align-items:center;gap:10px;}
+.qty-input-row label{font-size:14px;color:var(--muted);white-space:nowrap;}
+.qty-input-row input{flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;font-size:16px;font-weight:700;text-align:center;background:var(--bg);}
+.scan-btns-row{padding:0 16px 16px;display:flex;flex-direction:column;gap:8px;}
+.sec-btn{width:100%;padding:11px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);font-size:13px;font-weight:600;cursor:pointer;color:var(--text);}
+
+/* PRODUCTS */
+.screen-toolbar{display:flex;gap:10px;margin-bottom:14px;align-items:center;}
+.search-input{flex:1;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:15px;background:var(--card);color:var(--text);}
+.add-btn{background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.add-btn:active{background:var(--blue-dark);}
+.prod-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);}
+.prod-item-info{flex:1;min-width:0;}
+.prod-item-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prod-item-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.prod-item-sku{font-size:10px;color:var(--faint);font-family:monospace;margin-top:1px;}
+.prod-item-actions{display:flex;gap:6px;flex-shrink:0;}
+.icon-btn{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:13px;cursor:pointer;}
+
+/* BARCODE GEN */
+.bc-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);}
+.bc-section h3{font-size:14px;font-weight:700;margin-bottom:12px;}
+.bc-gen-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.bc-gen-row select,.bc-gen-row input{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;font-size:14px;background:var(--bg);}
+.bc-gen-row select{flex:1;min-width:100px;}
+.bc-gen-row input{width:80px;}
+.gen-btn{background:var(--blue);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.bc-preview{margin-top:12px;display:none;}
+
+/* SETTINGS */
+.settings-section{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.settings-title{font-size:11px;font-weight:700;color:var(--muted);padding:12px 16px 8px;text-transform:uppercase;letter-spacing:.08em;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);}
+.settings-row-label{font-size:14px;}
+.settings-row-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.settings-row-action{font-size:13px;color:var(--blue);cursor:pointer;font-weight:600;}
+.settings-row-action.red{color:var(--red);}
+.manage-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);}
+.manage-name{font-size:14px;}
+.manage-del{font-size:12px;color:var(--red);cursor:pointer;padding:4px 8px;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:var(--radius) var(--radius) 0 0;padding:24px 20px 36px;width:100%;max-width:500px;max-height:92vh;overflow-y:auto;}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:18px;}
+.form-row{margin-bottom:12px;}
+.form-row label{font-size:11px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
+.form-row input,.form-row select{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 12px;font-size:15px;background:var(--bg);color:var(--text);}
+.form-row input:focus,.form-row select:focus{outline:none;border-color:var(--blue);background:var(--card);}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;}
+.btn-cancel{padding:13px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:transparent;font-size:15px;font-weight:600;cursor:pointer;}
+.btn-save{padding:13px;border-radius:var(--radius-sm);border:none;background:var(--blue);color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a1d21;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;max-width:90vw;}
+.toast.show{opacity:1;}
+
+/* PRINT */
+@media print{body>*{display:none!important;}#print-area{display:block!important;}}
+#print-area{display:none;}
+.label-wrap{width:62mm;padding:3mm;font-family:monospace;}
+.label-name{font-size:9pt;font-weight:bold;margin-bottom:2mm;line-height:1.2;}
+.label-sku{font-size:7pt;margin-bottom:2mm;color:#555;}
+.label-barcode{text-align:center;}
+
+.loading{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px;}
+.empty{text-align:center;padding:30px 20px;color:var(--faint);font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- LOCATION PICKER -->
+<div id="screen-location" class="screen active">
+  <div class="logo-wrap">
+    <div class="logo">GSM<span>Lager</span></div>
+    <div class="logo-sub">Sistem upravljanja zalihama</div>
+  </div>
+  <div class="loc-grid" id="loc-grid">
+    <div class="loading" style="grid-column:1/-1;color:#93c5fd;">Učitavam...</div>
+  </div>
+  <button class="admin-entry-btn" onclick="openPinModal()">🔐 Admin panel</button>
+</div>
+
+<!-- PIN MODAL -->
+<div id="pin-modal">
+  <div class="pin-box">
+    <div class="pin-title">Admin pristup</div>
+    <div class="pin-sub">Unesi PIN kod</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="closePinModal()">✕</button>
+    </div>
+    <div class="pin-error" id="pin-error">Pogrešan PIN. Pokušaj ponovo.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="screen-main" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">GSM<span>Lager</span></div>
+      <div class="mode-badge worker" id="mode-badge">Radnik</div>
+    </div>
+    <div class="loc-badge" onclick="changeLoc()" id="loc-label">—</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="content">
+    <div id="alerts-container"></div>
+    <div class="dash-header">
+      <div class="dash-title">Pregled zaliha</div>
+      <div class="dash-sub" id="dash-sub"></div>
+    </div>
+    <div id="dashboard-content"><div class="loading">Učitavam...</div></div>
+  </div>
+
+  <!-- SCAN -->
+  <div id="tab-scan" class="content" style="display:none;">
+    <div class="scan-wrap">
+      <div id="reader"></div>
+      <div class="scan-hint" id="scan-hint">Usmeri kameru ka barkodu</div>
+      <div id="scan-result-box" style="display:none;width:100%;max-width:420px;"></div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS (admin) -->
+  <div id="tab-products" class="content" style="display:none;">
+    <div class="screen-toolbar">
+      <input type="text" class="search-input" id="prod-search" placeholder="Pretraži artikle..." oninput="filterProducts()">
+      <button class="add-btn" onclick="openAddProduct()">+ Dodaj</button>
+    </div>
+    <div class="bc-section">
+      <h3>🔢 Generator barkodova</h3>
+      <div class="bc-gen-row">
+        <select id="gen-prefix">
+          <option value="GSM">GSM</option><option value="STK">STK</option>
+          <option value="MSK">MSK</option><option value="KBL">KBL</option>
+          <option value="PNJ">PNJ</option><option value="SLS">SLS</option>
+          <option value="ZVU">ZVU</option><option value="FUT">FUT</option>
+        </select>
+        <input type="number" id="gen-from" value="1" min="1" placeholder="od">
+        <input type="number" id="gen-to" value="20" min="1" placeholder="do">
+        <button class="gen-btn" onclick="generateBarcodes()">Generiši i štampaj</button>
+      </div>
+      <div class="bc-preview" id="bc-preview"></div>
+    </div>
+    <div id="products-list"><div class="loading">Učitavam...</div></div>
+  </div>
+
+  <!-- SETTINGS (admin) -->
+  <div id="tab-settings" class="content" style="display:none;">
+    <div class="settings-section">
+      <div class="settings-title">Lokacije</div>
+      <div id="loc-manage-list"></div>
+      <div class="settings-row"><div class="settings-row-label">Dodaj lokaciju</div><div class="settings-row-action" onclick="addLocation()">+ Dodaj</div></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Kategorije</div>
+      <div id="cat-manage-list"></div>
+      <div class="settings-row"><div class="settings-row-label">Dodaj kategoriju</div><div class="settings-row-action" onclick="addCategory()">+ Dodaj</div></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Podkategorije</div>
+      <div id="subcat-manage-list"></div>
+      <div class="settings-row"><div class="settings-row-label">Dodaj podkategoriju</div><div class="settings-row-action" onclick="addSubcategory()">+ Dodaj</div></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Brendovi</div>
+      <div id="brand-manage-list"></div>
+      <div class="settings-row"><div class="settings-row-label">Dodaj brend</div><div class="settings-row-action" onclick="addBrand()">+ Dodaj</div></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Upozorenja</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Minimum zaliha</div><div class="settings-row-sub">Upozorenje ispod ovog broja</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="global-min" value="10" min="1" max="999" style="width:58px;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-size:14px;font-weight:700;text-align:center;background:var(--bg);">
+          <div class="settings-row-action" onclick="saveGlobalMin()">Sačuvaj</div>
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-row"><div class="settings-row-label">Izađi iz admin moda</div><div class="settings-row-action red" onclick="logoutAdmin()">Odjavi se</div></div>
+    </div>
+  </div>
+
+  <nav class="bottomnav">
+    <button class="nav-btn active" onclick="switchTab('dashboard',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Pregled
+    </button>
+    <button class="nav-btn" onclick="switchTab('scan',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>Skeniraj
+    </button>
+    <button class="nav-btn" id="nav-products" onclick="switchTab('products',this)" style="display:none;">
+      <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>Artikli
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="switchTab('settings',this)" style="display:none;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Podešavanja
+    </button>
+  </nav>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-bg" id="modal-product">
+  <div class="modal">
+    <h3 id="modal-product-title">Novi artikal</h3>
+    <div class="form-row"><label>Naziv artikla *</label><input type="text" id="f-name" placeholder="npr. Staklo Samsung S24 5D"></div>
+    <div class="form-row-2">
+      <div class="form-row"><label>Kategorija *</label><select id="f-cat" onchange="onCatChange()"></select></div>
+      <div class="form-row"><label>Podkategorija</label><select id="f-subcat"></select></div>
+    </div>
+    <div class="form-row"><label>Brend</label><select id="f-brand"></select></div>
+    <div class="form-row-2">
+      <div class="form-row"><label>Barkod</label><input type="text" id="f-barcode" placeholder="skeniran ili ručno"></div>
+      <div class="form-row"><label>SKU (opciono)</label><input type="text" id="f-sku" placeholder="APL-IP15"></div>
+    </div>
+    <div class="form-row"><label>Minimum zaliha (upozorenje)</label><input type="number" id="f-min" value="10" min="0"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('modal-product')">Otkaži</button>
+      <button class="btn-save" onclick="saveProduct()">Sačuvaj</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="print-area">
+  <div class="label-wrap">
+    <div class="label-name" id="print-name"></div>
+    <div class="label-sku" id="print-sku"></div>
+    <div class="label-barcode"><svg id="print-barcode"></svg></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL='https://iqkokwzelgvmdwzauvnh.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa29rd3plbGd2bWR3emF1dm5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzcyNzIsImV4cCI6MjA5NTQxMzI3Mn0.dRVNIlY9KBZVTTSFlnvDh3PwF92fT-fIKKXz7WJuI0A';
+const ADMIN_PIN='1107';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let isAdmin=false,currentLocation=null;
+let allLocations=[],allCategories=[],allSubcategories=[],allBrands=[],allProducts=[],allStock=[];
+let scanner=null,scannerActive=false,editingProductId=null,pinBuffer='';
+let globalMin=parseInt(localStorage.getItem('global_min')||'10');
+
+async function init(){
+  document.getElementById('global-min').value=globalMin;
+  const saved=localStorage.getItem('lager_location');
+  const {data:locs}=await sb.from('locations').select('*').order('id');
+  allLocations=locs||[];
+  renderLocPicker();
+  if(saved){const loc=allLocations.find(l=>l.id==saved);if(loc)selectLocation(loc,false);}
+}
+
+function renderLocPicker(){
+  const icons=['🏪','🏪','🏭','🏪','🏪','🏪'];
+  document.getElementById('loc-grid').innerHTML=allLocations.map((l,i)=>
+    `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},false)'>
+      <span class="loc-icon">${icons[i]||'🏪'}</span>${l.name}
+    </button>`
+  ).join('')||'<div style="color:#93c5fd;grid-column:1/-1;text-align:center;font-size:13px;">Nema lokacija. Uđi u Admin.</div>';
+}
+
+function selectLocation(loc,admin){
+  currentLocation=loc;
+  if(admin!==undefined)isAdmin=admin;
+  localStorage.setItem('lager_location',loc.id);
+  document.getElementById('loc-label').textContent=loc.name;
+  document.getElementById('screen-location').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  applyMode();loadAll();
+}
+
+function changeLoc(){
+  stopScanner();currentLocation=null;
+  document.getElementById('screen-main').classList.remove('active');
+  document.getElementById('screen-location').classList.add('active');
+  renderLocPicker();
+}
+
+// PIN
+function openPinModal(){
+  pinBuffer='';updatePinDots();
+  document.getElementById('pin-error').style.display='none';
+  document.getElementById('pin-modal').classList.add('open');
+}
+function closePinModal(){document.getElementById('pin-modal').classList.remove('open');pinBuffer='';updatePinDots();}
+function pinKey(d){
+  if(pinBuffer.length>=4)return;
+  pinBuffer+=d;updatePinDots();
+  if(pinBuffer.length===4){
+    setTimeout(()=>{
+      if(pinBuffer===ADMIN_PIN){closePinModal();enterAdmin();}
+      else{document.getElementById('pin-error').style.display='block';pinBuffer='';updatePinDots();}
+    },200);
+  }
+}
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
+function updatePinDots(){document.querySelectorAll('.pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinBuffer.length));}
+
+function enterAdmin(){
+  isAdmin=true;
+  if(currentLocation){applyMode();showToast('Admin mod aktivan 🔐');}
+  else{
+    const icons=['🏪','🏪','🏭','🏪','🏪'];
+    document.getElementById('loc-grid').innerHTML=allLocations.map((l,i)=>
+      `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},true)'>
+        <span class="loc-icon">${icons[i]||'🏪'}</span>${l.name}
+      </button>`
+    ).join('');
+    showToast('Admin mod — izaberi lokaciju');
+  }
+}
+
+function logoutAdmin(){isAdmin=false;applyMode();switchTab('dashboard',document.querySelector('.nav-btn'));showToast('Odjavljen iz admin moda');}
+
+function applyMode(){
+  const b=document.getElementById('mode-badge');
+  b.textContent=isAdmin?'Admin':'Radnik';
+  b.className='mode-badge '+(isAdmin?'admin':'worker');
+  document.getElementById('nav-products').style.display=isAdmin?'flex':'none';
+  document.getElementById('nav-settings').style.display=isAdmin?'flex':'none';
+}
+
+// LOAD
+async function loadAll(){
+  const [pRes,sRes,cRes,scRes,bRes]=await Promise.all([
+    sb.from('products').select('*,categories(name,icon),subcategories(name),brands(name)').order('name'),
+    sb.from('stock').select('*'),
+    sb.from('categories').select('*').order('name'),
+    sb.from('subcategories').select('*').order('name'),
+    sb.from('brands').select('*').order('name')
+  ]);
+  allProducts=pRes.data||[];allStock=sRes.data||[];
+  allCategories=cRes.data||[];allSubcategories=scRes.data||[];allBrands=bRes.data||[];
+  renderDashboard();renderProducts();renderSettings();
+}
+
+function getStock(pid,lid){const s=allStock.find(s=>s.product_id==pid&&s.location_id==lid);return s?s.quantity:0;}
+function getMin(p){return p.min_stock||globalMin;}
+
+// DASHBOARD
+function renderDashboard(){
+  if(!currentLocation)return;
+  const low=allProducts.filter(p=>{const q=getStock(p.id,currentLocation.id);return q>0&&q<=getMin(p);});
+  const zero=allProducts.filter(p=>getStock(p.id,currentLocation.id)===0&&allStock.some(s=>s.product_id==p.id));
+  let alertHtml='';
+  if(low.length||zero.length){
+    const w=[...zero.map(p=>`⛔ ${p.name} — NEMA`),...low.map(p=>`⚠️ ${p.name} — ${getStock(p.id,currentLocation.id)} kom`)];
+    alertHtml=`<div class="alerts-bar"><div class="alerts-bar-title">⚠️ Upozorenja (${w.length})</div>${w.slice(0,6).map(a=>`<div class="alert-item">${a}</div>`).join('')}${w.length>6?`<div class="alert-item">...i još ${w.length-6}</div>`:''}</div>`;
+  }
+  document.getElementById('alerts-container').innerHTML=alertHtml;
+  document.getElementById('dash-sub').textContent=currentLocation.name;
+
+  const grouped={};
+  allCategories.forEach(c=>{grouped[c.id]={cat:c,subcats:{}};});
+  allProducts.forEach(p=>{
+    if(!grouped[p.category_id])return;
+    const scId=p.subcategory_id||'none';
+    const scName=p.subcategories?.name||'Ostalo';
+    if(!grouped[p.category_id].subcats[scId])grouped[p.category_id].subcats[scId]={name:scName,brands:{}};
+    const bId=p.brand_id||'none';
+    const bName=p.brands?.name||'Ostalo';
+    if(!grouped[p.category_id].subcats[scId].brands[bId])grouped[p.category_id].subcats[scId].brands[bId]={name:bName,products:[]};
+    grouped[p.category_id].subcats[scId].brands[bId].products.push(p);
+  });
+
+  let html='';
+  allCategories.forEach(cat=>{
+    const g=grouped[cat.id];if(!g)return;
+    const catProds=allProducts.filter(p=>p.category_id===cat.id);
+    if(!catProds.length)return;
+    const total=catProds.reduce((s,p)=>s+getStock(p.id,currentLocation.id),0);
+    const scIds=Object.keys(g.subcats);
+
+    const tabs=scIds.map((scId,i)=>`<button class="subcat-tab ${i===0?'active':''}" onclick="switchSubcat(this,'sc${cat.id}_${scId}')">${g.subcats[scId].name}</button>`).join('');
+    const panels=scIds.map((scId,i)=>{
+      const sc=g.subcats[scId];
+      const bIds=Object.keys(sc.brands);
+      let bChips='',bPanels='';
+      if(bIds.length>1){
+        bChips=`<div class="brand-tabs"><button class="brand-chip active" onclick="switchBrand(this,'br${cat.id}_${scId}_all')">Sve</button>${bIds.map(bid=>`<button class="brand-chip" onclick="switchBrand(this,'br${cat.id}_${scId}_${bid}')">${sc.brands[bid].name}</button>`).join('')}</div>`;
+        bPanels=`<div id="br${cat.id}_${scId}_all" class="brand-panel">${renderRows(bIds.flatMap(bid=>sc.brands[bid].products))}</div>`;
+        bIds.forEach(bid=>{bPanels+=`<div id="br${cat.id}_${scId}_${bid}" class="brand-panel" style="display:none">${renderRows(sc.brands[bid].products)}</div>`;});
+      }else{bPanels=renderRows(bIds.flatMap(bid=>sc.brands[bid].products));}
+      return `<div id="sc${cat.id}_${scId}" class="subcat-panel" style="display:${i===0?'block':'none'}">${bChips}${bPanels}</div>`;
+    }).join('');
+
+    html+=`<div class="cat-card">
+      <div class="cat-header" onclick="toggleCat(this)">
+        <span class="cat-icon">${cat.icon||'📦'}</span>
+        <span class="cat-name">${cat.name}</span>
+        <span class="cat-count">${total} kom</span>
+        <span class="cat-chev open">▾</span>
+      </div>
+      <div class="cat-body open"><div class="subcat-tabs">${tabs}</div>${panels}</div>
+    </div>`;
+  });
+  document.getElementById('dashboard-content').innerHTML=html||'<div class="empty">Nema artikala. Dodaj ih u Admin → Artikli.</div>';
+}
+
+function renderRows(prods){
+  return prods.map(p=>{
+    const q=getStock(p.id,currentLocation.id);
+    const m=getMin(p);
+    const cls=q===0?'qty-zero':q<=Math.ceil(m*0.5)?'qty-critical':q<=m?'qty-low':'qty-ok';
+    return `<div class="prod-row"><div class="prod-row-name">${p.name}${p.sku?`<small>${p.sku}</small>`:''}</div><div class="qty-pill ${cls}">${q===0?'—':q+' kom'}</div></div>`;
+  }).join('')||'<div class="empty" style="padding:12px;">Nema artikala</div>';
+}
+
+function toggleCat(h){const b=h.nextElementSibling,c=h.querySelector('.cat-chev'),o=b.classList.contains('open');b.classList.toggle('open',!o);c.classList.toggle('open',!o);}
+function switchSubcat(btn,tid){
+  const cb=btn.closest('.cat-body');
+  cb.querySelectorAll('.subcat-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  cb.querySelectorAll('.subcat-panel').forEach(p=>p.style.display='none');
+  const t=cb.querySelector('#'+tid);if(t)t.style.display='block';
+}
+function switchBrand(btn,tid){
+  const sp=btn.closest('.subcat-panel');
+  sp.querySelectorAll('.brand-chip').forEach(c=>c.classList.remove('active'));btn.classList.add('active');
+  sp.querySelectorAll('.brand-panel').forEach(p=>p.style.display='none');
+  const t=sp.querySelector('#'+tid);if(t)t.style.display='block';
+}
+
+// SCAN
+function startScanner(){
+  if(scannerActive)return;
+  document.getElementById('scan-result-box').style.display='none';
+  document.getElementById('scan-hint').textContent='Pokretam kameru...';
+  scanner=new Html5Qrcode('reader');
+  scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:120}},onScanSuccess,()=>{})
+    .then(()=>{scannerActive=true;document.getElementById('scan-hint').textContent='Usmeri kameru ka barkodu';})
+    .catch(e=>{document.getElementById('scan-hint').textContent='Greška: '+e;});
+}
+function stopScanner(){if(scanner&&scannerActive){scanner.stop().catch(()=>{});scannerActive=false;}}
+
+async function onScanSuccess(code){
+  stopScanner();
+  document.getElementById('scan-hint').textContent='Barkod: '+code;
+  const p=allProducts.find(x=>x.barcode===code);
+  const box=document.getElementById('scan-result-box');
+  box.style.display='block';
+  if(!p){
+    box.innerHTML=`<div class="scan-result-card"><div class="scan-result-head"><div class="scan-result-name">Artikal nije pronađen</div><div class="scan-result-meta">${code}</div></div><div class="scan-btns-row" style="padding:16px;">${isAdmin?`<button class="add-btn" style="width:100%;margin-bottom:8px;" onclick="openAddProductWithBarcode('${code}')">+ Dodaj artikal</button>`:''}<button class="sec-btn" onclick="restartScanner()">↩ Skeniraj ponovo</button></div></div>`;
+    return;
+  }
+  const stocks=allLocations.map(l=>{const q=getStock(p.id,l.id);const cur=l.id===currentLocation.id;return `<div class="scan-stock-row"><span>${l.name}${cur?' ◀':''}</span><span class="scan-stock-val${cur?' current':''}">${q}</span></div>`;}).join('');
+  const adminHtml=isAdmin?`<div class="qty-input-row"><label>Količina:</label><input type="number" id="scan-qty" value="1" min="1" max="9999"></div><div class="scan-actions"><button class="action-btn btn-add" onclick="adjustStock(${p.id},1)">+ Prijem</button><button class="action-btn btn-remove" onclick="adjustStock(${p.id},-1)">− Izdavanje</button></div>`:'';
+  box.innerHTML=`<div class="scan-result-card"><div class="scan-result-head"><div class="scan-result-name">${p.name}</div><div class="scan-result-meta">${[p.categories?.name,p.subcategories?.name,p.brands?.name].filter(Boolean).join(' · ')}</div></div><div class="scan-stocks">${stocks}</div>${adminHtml}<div class="scan-btns-row"><button class="sec-btn" onclick="printLabel(${p.id})">🖨 Štampaj barkod</button><button class="sec-btn" onclick="restartScanner()">↩ Skeniraj ponovo</button></div></div>`;
+}
+
+function openAddProductWithBarcode(bc){openAddProduct();document.getElementById('f-barcode').value=bc;}
+function restartScanner(){document.getElementById('scan-result-box').style.display='none';startScanner();}
+
+async function adjustStock(pid,dir){
+  if(!isAdmin){showToast('Samo admin može menjati stanje');return;}
+  const qty=parseInt(document.getElementById('scan-qty')?.value||1);
+  const change=dir*qty;
+  const ex=allStock.find(s=>s.product_id==pid&&s.location_id==currentLocation.id);
+  let error;
+  if(ex){const nq=Math.max(0,ex.quantity+change);({error}=await sb.from('stock').update({quantity:nq}).eq('id',ex.id));if(!error)ex.quantity=nq;}
+  else{const nq=Math.max(0,change);({error}=await sb.from('stock').insert({product_id:pid,location_id:currentLocation.id,quantity:nq}));if(!error)allStock.push({product_id:pid,location_id:currentLocation.id,quantity:nq});}
+  if(!error){
+    await sb.from('movements').insert({product_id:pid,location_id:currentLocation.id,quantity_change:change,type:dir>0?'prijem':'izdavanje'});
+    showToast(dir>0?`+${qty} dodano ✓`:`−${qty} skinuto ✓`);
+    renderDashboard();
+    await onScanSuccess(allProducts.find(x=>x.id==pid)?.barcode);
+  }else showToast('Greška: '+error.message);
+}
+
+// PRODUCTS
+function renderProducts(){
+  if(!isAdmin)return;
+  const s=(document.getElementById('prod-search')?.value||'').toLowerCase();
+  const f=allProducts.filter(p=>p.name.toLowerCase().includes(s));
+  document.getElementById('products-list').innerHTML=f.map(p=>`<div class="prod-item"><div class="prod-item-info"><div class="prod-item-name">${p.name}</div><div class="prod-item-meta">${[p.categories?.name,p.subcategories?.name,p.brands?.name].filter(Boolean).join(' · ')||'—'}</div>${p.sku||p.barcode?`<div class="prod-item-sku">${[p.sku,p.barcode].filter(Boolean).join(' · ')}</div>`:''}</div><div class="prod-item-actions"><button class="icon-btn" onclick="editProduct(${p.id})">✏️</button><button class="icon-btn" onclick="printLabel(${p.id})">🖨</button><button class="icon-btn" onclick="deleteProduct(${p.id},'${p.name.replace(/'/g,"\\'")}')">🗑</button></div></div>`).join('')||'<div class="empty">Nema artikala</div>';
+}
+function filterProducts(){renderProducts();}
+
+function openAddProduct(){
+  editingProductId=null;
+  document.getElementById('modal-product-title').textContent='Novi artikal';
+  ['f-name','f-barcode','f-sku'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-min').value=globalMin;
+  populateCatSelect();populateBrandSelect();
+  document.getElementById('modal-product').classList.add('open');
+}
+function editProduct(id){
+  const p=allProducts.find(x=>x.id===id);if(!p)return;
+  editingProductId=id;
+  document.getElementById('modal-product-title').textContent='Uredi artikal';
+  document.getElementById('f-name').value=p.name;
+  document.getElementById('f-barcode').value=p.barcode||'';
+  document.getElementById('f-sku').value=p.sku||'';
+  document.getElementById('f-min').value=p.min_stock||globalMin;
+  populateCatSelect(p.category_id,p.subcategory_id);populateBrandSelect(p.brand_id);
+  document.getElementById('modal-product').classList.add('open');
+}
+function populateCatSelect(selCat,selSub){
+  document.getElementById('f-cat').innerHTML='<option value="">— Kategorija —</option>'+allCategories.map(c=>`<option value="${c.id}" ${c.id==selCat?'selected':''}>${c.name}</option>`).join('');
+  populateSubcatSelect(selCat,selSub);
+}
+function populateBrandSelect(sel){
+  document.getElementById('f-brand').innerHTML='<option value="">— Brend —</option>'+allBrands.map(b=>`<option value="${b.id}" ${b.id==sel?'selected':''}>${b.name}</option>`).join('');
+}
+function onCatChange(){populateSubcatSelect(document.getElementById('f-cat').value);}
+function populateSubcatSelect(catId,sel){
+  const subs=allSubcategories.filter(s=>s.category_id==catId);
+  document.getElementById('f-subcat').innerHTML='<option value="">— Podkategorija —</option>'+subs.map(s=>`<option value="${s.id}" ${s.id==sel?'selected':''}>${s.name}</option>`).join('');
+}
+async function saveProduct(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){showToast('Unesi naziv');return;}
+  const payload={name,category_id:document.getElementById('f-cat').value||null,subcategory_id:document.getElementById('f-subcat').value||null,brand_id:document.getElementById('f-brand').value||null,barcode:document.getElementById('f-barcode').value.trim()||null,sku:document.getElementById('f-sku').value.trim()||null,min_stock:parseInt(document.getElementById('f-min').value)||globalMin};
+  let error;
+  if(editingProductId)({error}=await sb.from('products').update(payload).eq('id',editingProductId));
+  else({error}=await sb.from('products').insert(payload));
+  if(error){showToast('Greška: '+error.message);return;}
+  closeModal('modal-product');await loadAll();showToast(editingProductId?'Artikal ažuriran ✓':'Artikal dodan ✓');
+}
+async function deleteProduct(id,name){
+  if(!confirm(`Obrisati "${name}"?`))return;
+  await sb.from('stock').delete().eq('product_id',id);
+  await sb.from('movements').delete().eq('product_id',id);
+  await sb.from('products').delete().eq('id',id);
+  await loadAll();showToast('Artikal obrisan');
+}
+
+// SETTINGS
+function renderSettings(){
+  document.getElementById('loc-manage-list').innerHTML=allLocations.map(l=>`<div class="manage-item"><div class="manage-name">${l.name}</div><div class="manage-del" onclick="deleteLocation(${l.id},'${l.name}')">Obriši</div></div>`).join('');
+  document.getElementById('cat-manage-list').innerHTML=allCategories.map(c=>`<div class="manage-item"><div class="manage-name">${c.icon||'📦'} ${c.name}</div><div class="manage-del" onclick="deleteCategory(${c.id},'${c.name}')">Obriši</div></div>`).join('');
+  document.getElementById('subcat-manage-list').innerHTML=allSubcategories.map(s=>{const cat=allCategories.find(c=>c.id===s.category_id);return `<div class="manage-item"><div class="manage-name">${s.name} <small style="color:var(--muted);font-size:11px;">(${cat?.name||'?'})</small></div><div class="manage-del" onclick="deleteSubcategory(${s.id},'${s.name}')">Obriši</div></div>`;}).join('');
+  document.getElementById('brand-manage-list').innerHTML=allBrands.map(b=>`<div class="manage-item"><div class="manage-name">${b.name}</div><div class="manage-del" onclick="deleteBrand(${b.id},'${b.name}')">Obriši</div></div>`).join('');
+}
+function saveGlobalMin(){globalMin=parseInt(document.getElementById('global-min').value)||10;localStorage.setItem('global_min',globalMin);renderDashboard();showToast('Minimum sačuvan: '+globalMin+' kom');}
+
+async function addLocation(){const n=prompt('Naziv lokacije:');if(!n?.trim())return;const{error}=await sb.from('locations').insert({name:n.trim()});if(error){showToast('Greška: '+error.message);return;}const{data}=await sb.from('locations').select('*').order('id');allLocations=data;renderLocPicker();renderSettings();renderDashboard();showToast('Lokacija dodana ✓');}
+async function deleteLocation(id,name){if(!confirm(`Obrisati "${name}"? Briše se i sve zalihe!`))return;await sb.from('stock').delete().eq('location_id',id);await sb.from('locations').delete().eq('id',id);allLocations=allLocations.filter(l=>l.id!==id);renderLocPicker();renderSettings();renderDashboard();showToast('Obrisano');}
+async function addCategory(){const n=prompt('Naziv kategorije:');if(!n?.trim())return;const icon=prompt('Emoji ikonica (npr. 🔋):')||'📦';await sb.from('categories').insert({name:n.trim(),icon});const{data}=await sb.from('categories').select('*').order('name');allCategories=data;renderSettings();renderDashboard();showToast('Kategorija dodana ✓');}
+async function deleteCategory(id,name){if(!confirm(`Obrisati "${name}"?`))return;await sb.from('categories').delete().eq('id',id);allCategories=allCategories.filter(c=>c.id!==id);renderSettings();renderDashboard();showToast('Obrisano');}
+async function addSubcategory(){
+  if(!allCategories.length){showToast('Prvo dodaj kategoriju');return;}
+  const idx=prompt('Broj kategorije:\n'+allCategories.map((c,i)=>`${i+1}. ${c.name}`).join('\n'));
+  const ci=parseInt(idx)-1;if(isNaN(ci)||!allCategories[ci]){showToast('Pogrešan unos');return;}
+  const n=prompt(`Podkategorija za "${allCategories[ci].name}":`);if(!n?.trim())return;
+  await sb.from('subcategories').insert({category_id:allCategories[ci].id,name:n.trim()});
+  const{data}=await sb.from('subcategories').select('*').order('name');allSubcategories=data;renderSettings();renderDashboard();showToast('Podkategorija dodana ✓');
+}
+async function deleteSubcategory(id,name){if(!confirm(`Obrisati "${name}"?`))return;await sb.from('subcategories').delete().eq('id',id);allSubcategories=allSubcategories.filter(s=>s.id!==id);renderSettings();renderDashboard();showToast('Obrisano');}
+async function addBrand(){const n=prompt('Naziv brenda:');if(!n?.trim())return;await sb.from('brands').insert({name:n.trim()});const{data}=await sb.from('brands').select('*').order('name');allBrands=data;renderSettings();showToast('Brend dodan ✓');}
+async function deleteBrand(id,name){if(!confirm(`Obrisati "${name}"?`))return;await sb.from('brands').delete().eq('id',id);allBrands=allBrands.filter(b=>b.id!==id);renderSettings();showToast('Obrisano');}
+
+// BARCODE PRINT
+function printLabel(pid){
+  const p=allProducts.find(x=>x.id==pid);if(!p)return;
+  const code=p.barcode||p.sku||String(p.id);
+  document.getElementById('print-name').textContent=p.name;
+  document.getElementById('print-sku').textContent=code;
+  makeBarcodeInto(document.getElementById('print-barcode'),code,200,55);
+  setTimeout(()=>window.print(),150);
+}
+function makeBarcodeInto(svg,code,W,H){
+  let bars=[],x=0;
+  for(let i=0;i<code.length*9+18;i++){
+    const ch=code.charCodeAt(Math.floor(i/9)%code.length);
+    const w=(ch+i*3)%4===0?3:(ch+i*3)%4===1?2:1;
+    const dark=(ch+i)%3!==0;
+    if(dark)bars.push(`<rect x="${x}" y="0" width="${w}" height="${H-8}" fill="#000"/>`);
+    x+=w+1;if(x>W)break;
+  }
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.innerHTML=`<rect width="${W}" height="${H}" fill="white"/>`+bars.join('')+`<text x="${W/2}" y="${H-1}" text-anchor="middle" font-size="7" font-family="monospace" fill="#000">${code}</text>`;
+}
+
+// BARCODE GENERATOR
+function generateBarcodes(){
+  const prefix=document.getElementById('gen-prefix').value;
+  const from=parseInt(document.getElementById('gen-from').value)||1;
+  const to=parseInt(document.getElementById('gen-to').value)||20;
+  if(to<from||to-from>300){showToast('Max 300 barkodova odjednom');return;}
+  const area=document.getElementById('bc-preview');
+  area.style.display='block';
+  area.innerHTML='<div style="color:var(--muted);font-size:13px;margin-bottom:10px;">Generišem '+((to-from+1))+' barkodova...</div>';
+  setTimeout(()=>{
+    let items='';
+    const codes=[];
+    for(let i=from;i<=to;i++){
+      const code=`${prefix}${String(i).padStart(5,'0')}`;
+      codes.push(code);
+      items+=`<div style="border:1px solid #ddd;border-radius:6px;padding:6px 4px;text-align:center;background:#fff;"><div id="bcg${i}"></div><div style="font-size:9px;font-family:monospace;color:#555;margin-top:2px;">${code}</div></div>`;
+    }
+    area.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin-bottom:10px;">${items}</div><button class="gen-btn" style="width:100%;padding:12px;" onclick="printGenerated(${JSON.stringify(codes).replace(/"/g,'&quot;')})">🖨 Štampaj sve (${codes.length})</button>`;
+    codes.forEach((code,j)=>{
+      const i=from+j;
+      const container=document.getElementById('bcg'+i);
+      if(!container)return;
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      makeBarcodeInto(svg,code,110,28);
+      container.appendChild(svg);
+    });
+  },50);
+}
+
+function printGenerated(codes){
+  const win=window.open('','_blank','width=900,height=700');
+  let barcodeItems='';
+  codes.forEach(code=>{
+    const svgEl=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    makeBarcodeInto(svgEl,code,130,32);
+    barcodeItems+=`<div style="border:1px solid #ccc;border-radius:4px;padding:5px;text-align:center;background:#fff;"><div>${svgEl.outerHTML}</div><div style="font-size:8px;font-family:monospace;margin-top:2px;">${code}</div></div>`;
+  });
+  win.document.write(`<html><head><title>Barkodovi</title><style>body{margin:8px;font-family:monospace;}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;}@media print{@page{margin:6mm;}button{display:none!important;}}</style></head><body><button onclick="window.print()" style="margin-bottom:10px;padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">🖨 Štampaj</button><div class="grid">${barcodeItems}</div></body></html>`);
+  win.document.close();
+}
+
+// TABS
+function switchTab(name,btn){
+  ['dashboard','scan','products','settings'].forEach(t=>{const el=document.getElementById('tab-'+t);el.style.display=t===name?'flex':'none';if(t===name)el.style.flexDirection='column';});
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(name==='scan')startScanner();else stopScanner();
+  if(name==='products')renderProducts();
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// BOOT
+document.getElementById('tab-dashboard').style.cssText='display:flex;flex-direction:column;';
+['scan','products','settings'].forEach(t=>document.getElementById('tab-'+t).style.display='none');
+init();
+</script>
+</body>
+</html>
