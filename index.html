@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_4.html -->
+<!-- saved from url=(0042)file:///C:/Users/Pc/Downloads/index_6.html -->
 <html lang="sr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="./GSM Lager_files/supabase-js@2"></script>
+<script src="./GSM Lager_files/html5-qrcode.min.js.download"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GSM Lager</title>
@@ -196,7 +198,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 
 <!-- LOCATION PICKER -->
-<div id="screen-location" class="screen">
+<div id="screen-location" class="screen active">
   <div class="logo-wrap">
     <div class="logo">GSM<span>Lager</span></div>
     <div class="logo-sub">Sistem upravljanja zalihama</div>
@@ -241,13 +243,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- MAIN APP -->
-<div id="screen-main" class="screen active">
+<div id="screen-main" class="screen">
   <div class="topbar">
     <div class="topbar-left">
       <div class="topbar-logo">GSM<span>Lager</span></div>
       <div class="mode-badge worker" id="mode-badge">Radnik</div>
     </div>
-    <div class="loc-badge" onclick="changeLoc()" id="loc-label">Radnja 1</div>
+    <div class="loc-badge" onclick="changeLoc()" id="loc-label">—</div>
   </div>
 
   <!-- DASHBOARD -->
@@ -255,9 +257,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div id="alerts-container"></div>
     <div class="dash-header">
       <div class="dash-title">Pregled zaliha</div>
-      <div class="dash-sub" id="dash-sub">Radnja 1</div>
+      <div class="dash-sub" id="dash-sub"></div>
     </div>
-    <div id="dashboard-content"><div class="empty">Nema artikala. Dodaj ih u Admin → Artikli.</div></div>
+    <div id="dashboard-content"><div class="loading">Učitavam...</div></div>
   </div>
 
   <!-- SCAN -->
@@ -297,12 +299,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="tab-settings" class="content" style="display:none;">
     <div class="settings-section">
       <div class="settings-title">Lokacije</div>
-      <div id="loc-manage-list"><div class="manage-item"><div class="manage-name">Magacin</div><div class="manage-del" onclick="deleteLocation(1,&#39;Magacin&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 1</div><div class="manage-del" onclick="deleteLocation(2,&#39;Radnja 1&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 2</div><div class="manage-del" onclick="deleteLocation(3,&#39;Radnja 2&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">Radnja 3</div><div class="manage-del" onclick="deleteLocation(4,&#39;Radnja 3&#39;)">Obriši</div></div></div>
+      <div id="loc-manage-list"></div>
       <div class="settings-row"><div class="settings-row-label">Dodaj lokaciju</div><div class="settings-row-action" onclick="addLocation()">+ Dodaj</div></div>
     </div>
     <div class="settings-section">
       <div class="settings-title">Kategorije</div>
-      <div id="cat-manage-list"><div class="manage-item"><div class="manage-name">👜 Futrole</div><div class="manage-del" onclick="deleteCategory(10,&#39;Futrole&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Kablovi</div><div class="manage-del" onclick="deleteCategory(4,&#39;Kablovi&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔗 Kablovi</div><div class="manage-del" onclick="deleteCategory(8,&#39;Kablovi&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📱 Maske</div><div class="manage-del" onclick="deleteCategory(9,&#39;Maske&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Maske</div><div class="manage-del" onclick="deleteCategory(3,&#39;Maske&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Ostalo</div><div class="manage-del" onclick="deleteCategory(5,&#39;Ostalo&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Punjači</div><div class="manage-del" onclick="deleteCategory(2,&#39;Punjači&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔌 Punjači</div><div class="manage-del" onclick="deleteCategory(7,&#39;Punjači&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🎧 Slušalice</div><div class="manage-del" onclick="deleteCategory(11,&#39;Slušalice&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">📦 Stakla</div><div class="manage-del" onclick="deleteCategory(1,&#39;Stakla&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🛡️ Stakla</div><div class="manage-del" onclick="deleteCategory(6,&#39;Stakla&#39;)">Obriši</div></div><div class="manage-item"><div class="manage-name">🔊 Zvučnici</div><div class="manage-del" onclick="deleteCategory(12,&#39;Zvučnici&#39;)">Obriši</div></div></div>
+      <div id="cat-manage-list"></div>
       <div class="settings-row"><div class="settings-row-label">Dodaj kategoriju</div><div class="settings-row-action" onclick="addCategory()">+ Dodaj</div></div>
     </div>
     <div class="settings-section">
@@ -378,8 +380,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<script src="./GSM Lager_files/supabase-js@2"></script>
-<script src="./GSM Lager_files/html5-qrcode.min.js.download"></script>
 <script>
 const SUPABASE_URL='https://iqkokwzelgvmdwzauvnh.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlxa29rd3plbGd2bWR3emF1dm5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MzcyNzIsImV4cCI6MjA5NTQxMzI3Mn0.dRVNIlY9KBZVTTSFlnvDh3PwF92fT-fIKKXz7WJuI0A';
@@ -393,11 +393,9 @@ let globalMin=parseInt(localStorage.getItem('global_min')||'10');
 
 async function init(){
   document.getElementById('global-min').value=globalMin;
-  const saved=localStorage.getItem('lager_location');
   const {data:locs}=await sb.from('locations').select('*').order('id');
   allLocations=locs||[];
   renderLocPicker();
-  if(saved){const loc=allLocations.find(l=>l.id==saved);if(loc)selectLocation(loc,false);}
 }
 
 function getLocIcon(name){
