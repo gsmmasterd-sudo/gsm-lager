@@ -392,11 +392,18 @@ async function init(){
   if(saved){const loc=allLocations.find(l=>l.id==saved);if(loc)selectLocation(loc,false);}
 }
 
+function getLocIcon(name){
+  const n=name.toLowerCase();
+  if(n.includes('magacin')||n.includes('skladište')||n.includes('storage'))return'🏭';
+  if(n.includes('radnja')||n.includes('shop')||n.includes('prodavnica'))return'🏪';
+  if(n.includes('servis')||n.includes('repair'))return'🔧';
+  if(n.includes('kancelarija')||n.includes('office'))return'🏢';
+  return'🏪';
+}
 function renderLocPicker(){
-  const icons=['🏪','🏪','🏭','🏪','🏪','🏪'];
-  document.getElementById('loc-grid').innerHTML=allLocations.map((l,i)=>
+  document.getElementById('loc-grid').innerHTML=allLocations.map(l=>
     `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},false)'>
-      <span class="loc-icon">${icons[i]||'🏪'}</span>${l.name}
+      <span class="loc-icon">${getLocIcon(l.name)}</span>${l.name}
     </button>`
   ).join('')||'<div style="color:#93c5fd;grid-column:1/-1;text-align:center;font-size:13px;">Nema lokacija. Uđi u Admin.</div>';
 }
@@ -442,10 +449,9 @@ function enterAdmin(){
   isAdmin=true;
   if(currentLocation){applyMode();showToast('Admin mod aktivan 🔐');}
   else{
-    const icons=['🏪','🏪','🏭','🏪','🏪'];
-    document.getElementById('loc-grid').innerHTML=allLocations.map((l,i)=>
+    document.getElementById('loc-grid').innerHTML=allLocations.map(l=>
       `<button class="loc-btn" onclick='selectLocation(${JSON.stringify(l)},true)'>
-        <span class="loc-icon">${icons[i]||'🏪'}</span>${l.name}
+        <span class="loc-icon">${getLocIcon(l.name)}</span>${l.name}
       </button>`
     ).join('');
     showToast('Admin mod — izaberi lokaciju');
